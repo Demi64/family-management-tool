@@ -1,0 +1,953 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>わが家管理ツール</title>
+<style>
+  :root {
+    --bg: #f4f5f7;
+    --card-bg: #ffffff;
+    --text: #2b2d33;
+    --text-sub: #767a85;
+    --border: #e2e4e9;
+    --primary: #4a6cf7;
+    --primary-dark: #3454d1;
+    --danger: #e5484d;
+    --danger-bg: #fde9ea;
+    --success: #2fa06a;
+    --success-bg: #e7f7ef;
+    --warn-bg: #fff4e0;
+    --radius: 10px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic", "Segoe UI", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    padding-bottom: 72px;
+  }
+  header {
+    background: var(--card-bg);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 16px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  header h1 { font-size: 18px; margin: 0; }
+  header button {
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-size: 13px;
+    color: var(--text-sub);
+    cursor: pointer;
+  }
+  main { max-width: 640px; margin: 0 auto; padding: 16px; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  .card {
+    background: var(--card-bg);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .card h2 { font-size: 15px; margin: 0 0 12px; }
+  .card h3 { font-size: 14px; margin: 0 0 8px; color: var(--text-sub); }
+
+  .stat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .stat-box {
+    background: var(--bg);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .stat-box .label { font-size: 12px; color: var(--text-sub); }
+  .stat-box .value { font-size: 20px; font-weight: 700; margin-top: 4px; }
+
+  .list-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .list-item:last-child { border-bottom: none; }
+  .list-item .main { flex: 1; min-width: 0; }
+  .list-item .title { font-size: 14px; font-weight: 600; }
+  .list-item .sub { font-size: 12px; color: var(--text-sub); margin-top: 2px; }
+  .list-item .amount { font-weight: 700; font-size: 14px; white-space: nowrap; }
+  .empty { color: var(--text-sub); font-size: 13px; padding: 12px 0; text-align: center; }
+
+  .tag {
+    display: inline-block;
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    color: #fff;
+    margin-right: 4px;
+  }
+
+  form.entry-form { display: flex; flex-direction: column; gap: 10px; }
+  .entry-form .row { display: flex; gap: 8px; }
+  .entry-form .row > * { flex: 1; }
+  .field label { font-size: 12px; color: var(--text-sub); display: block; margin-bottom: 4px; }
+  input:not([type="checkbox"]):not([type="radio"]), select, textarea {
+    width: 100%;
+    padding: 9px 10px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 14px;
+    background: #fff;
+    color: var(--text);
+    font-family: inherit;
+  }
+  textarea { resize: vertical; min-height: 44px; }
+  input[type="checkbox"] { width: 16px; height: 16px; flex: none; }
+  .btn {
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .btn:hover { background: var(--primary-dark); }
+  .btn.secondary {
+    background: var(--bg);
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+  .btn.danger { background: var(--danger); }
+  .btn.small { padding: 5px 10px; font-size: 12px; }
+  .btn.block { width: 100%; }
+
+  .icon-btn {
+    background: none;
+    border: none;
+    color: var(--text-sub);
+    cursor: pointer;
+    font-size: 16px;
+    padding: 4px 6px;
+    line-height: 1;
+  }
+  .icon-btn:hover { color: var(--danger); }
+
+  .filter-bar { display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+  .filter-bar select { width: auto; flex: none; }
+
+  .checklist-item { display: flex; align-items: center; gap: 8px; padding: 6px 0; }
+  .checklist-item span { flex: 1; font-size: 13px; }
+  .checklist-item.done span { text-decoration: line-through; color: var(--text-sub); }
+
+  nav.tabbar {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: var(--card-bg);
+    border-top: 1px solid var(--border);
+    display: flex;
+    z-index: 10;
+  }
+  nav.tabbar button {
+    flex: 1;
+    background: none;
+    border: none;
+    padding: 10px 4px 8px;
+    font-size: 11px;
+    color: var(--text-sub);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    cursor: pointer;
+  }
+  nav.tabbar button .emoji { font-size: 18px; }
+  nav.tabbar button.active { color: var(--primary); font-weight: 700; }
+
+  .modal-backdrop {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.4);
+    z-index: 20;
+    align-items: flex-end;
+    justify-content: center;
+  }
+  .modal-backdrop.open { display: flex; }
+  .modal {
+    background: #fff;
+    width: 100%;
+    max-width: 640px;
+    border-radius: 16px 16px 0 0;
+    padding: 20px;
+    max-height: 85vh;
+    overflow-y: auto;
+  }
+  .modal h2 { margin-top: 0; font-size: 16px; }
+  .member-row { display: flex; align-items: center; gap: 8px; padding: 6px 0; }
+  .member-row .dot { width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; }
+  .member-row .name { flex: 1; font-size: 14px; }
+  .swatches { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+  .swatch { width: 22px; height: 22px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; }
+  .swatch.selected { border-color: var(--text); }
+
+  .trip-card { border: 1px solid var(--border); border-radius: 8px; padding: 12px; margin-bottom: 10px; }
+  .trip-card .head { display: flex; justify-content: space-between; align-items: flex-start; cursor: pointer; }
+  .trip-card .head .title { font-size: 15px; font-weight: 700; }
+  .trip-card .head .dates { font-size: 12px; color: var(--text-sub); margin-top: 2px; }
+  .trip-card .body { display: none; margin-top: 12px; border-top: 1px solid var(--border); padding-top: 12px; }
+  .trip-card.open .body { display: block; }
+  .add-inline { display: flex; gap: 6px; margin-top: 8px; }
+  .add-inline input { flex: 1; }
+
+  .section-title { font-size: 13px; font-weight: 700; color: var(--text-sub); margin: 18px 0 6px; }
+  .section-title:first-child { margin-top: 0; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🏠 わが家管理ツール</h1>
+  <button id="openMembersBtn">家族設定</button>
+</header>
+
+<main>
+  <!-- ホーム -->
+  <section class="tab-panel active" id="tab-home">
+    <div class="card">
+      <h2>今月のサマリー</h2>
+      <div class="stat-grid">
+        <div class="stat-box">
+          <div class="label">今月の支出合計</div>
+          <div class="value" id="homeExpenseTotal">¥0</div>
+        </div>
+        <div class="stat-box">
+          <div class="label">未完了の家事</div>
+          <div class="value" id="homeChoreCount">0件</div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>直近の予定</h2>
+      <div id="homeUpcomingEvents"></div>
+    </div>
+    <div class="card">
+      <h2>次の家族旅行</h2>
+      <div id="homeNextTrip"></div>
+    </div>
+    <div class="card">
+      <h2>やり残している家事</h2>
+      <div id="homePendingChores"></div>
+    </div>
+  </section>
+
+  <!-- 支出 -->
+  <section class="tab-panel" id="tab-expense">
+    <div class="card">
+      <h2>支出を記録</h2>
+      <form class="entry-form" id="expenseForm">
+        <div class="row">
+          <div class="field"><label>日付</label><input type="date" name="date" required></div>
+          <div class="field"><label>金額(円)</label><input type="number" name="amount" min="0" required></div>
+        </div>
+        <div class="row">
+          <div class="field">
+            <label>カテゴリ</label>
+            <select name="category">
+              <option>食費</option><option>日用品</option><option>教育</option>
+              <option>医療</option><option>娯楽・レジャー</option><option>住居・光熱</option>
+              <option>衣類</option><option>その他</option>
+            </select>
+          </div>
+          <div class="field"><label>支払者</label><select name="payerId" id="expensePayerSelect"></select></div>
+        </div>
+        <div class="field"><label>メモ</label><input type="text" name="memo" placeholder="任意"></div>
+        <button type="submit" class="btn block">追加する</button>
+      </form>
+    </div>
+    <div class="card">
+      <h2>支出一覧</h2>
+      <div class="filter-bar">
+        <select id="expenseMonthFilter"></select>
+        <select id="expenseCategoryFilter"><option value="">カテゴリ:全て</option></select>
+      </div>
+      <div class="stat-grid" style="margin-bottom:10px;">
+        <div class="stat-box"><div class="label">選択中の合計</div><div class="value" id="expenseFilteredTotal">¥0</div></div>
+        <div class="stat-box"><div class="label">件数</div><div class="value" id="expenseFilteredCount">0件</div></div>
+      </div>
+      <div id="expenseList"></div>
+    </div>
+  </section>
+
+  <!-- 家事 -->
+  <section class="tab-panel" id="tab-chore">
+    <div class="card">
+      <h2>家事タスクを追加</h2>
+      <form class="entry-form" id="choreForm">
+        <div class="field"><label>タスク名</label><input type="text" name="title" required placeholder="例: 洗濯物をたたむ"></div>
+        <div class="row">
+          <div class="field"><label>担当者</label><select name="assigneeId" id="choreAssigneeSelect"></select></div>
+          <div class="field">
+            <label>頻度</label>
+            <select name="frequency">
+              <option value="once">一回限り</option>
+              <option value="daily">毎日</option>
+              <option value="weekly">毎週</option>
+              <option value="monthly">毎月</option>
+            </select>
+          </div>
+        </div>
+        <div class="field"><label>期限</label><input type="date" name="dueDate"></div>
+        <button type="submit" class="btn block">追加する</button>
+      </form>
+    </div>
+    <div class="card">
+      <h2>家事タスク一覧</h2>
+      <div class="filter-bar">
+        <select id="choreAssigneeFilter"><option value="">担当者:全て</option></select>
+        <select id="choreStatusFilter">
+          <option value="pending">未完了のみ</option>
+          <option value="all">全て表示</option>
+          <option value="done">完了のみ</option>
+        </select>
+      </div>
+      <div id="choreList"></div>
+    </div>
+  </section>
+
+  <!-- 予定 -->
+  <section class="tab-panel" id="tab-event">
+    <div class="card">
+      <h2>子供の予定を追加</h2>
+      <form class="entry-form" id="eventForm">
+        <div class="row">
+          <div class="field"><label>お子さん / メンバー</label><select name="memberId" id="eventMemberSelect"></select></div>
+          <div class="field"><label>予定名</label><input type="text" name="title" required placeholder="例: 授業参観"></div>
+        </div>
+        <div class="row">
+          <div class="field"><label>日付</label><input type="date" name="date" required></div>
+          <div class="field"><label>時刻</label><input type="time" name="time"></div>
+        </div>
+        <div class="field"><label>場所</label><input type="text" name="place" placeholder="任意"></div>
+        <div class="field"><label>メモ</label><textarea name="memo" placeholder="持ち物など"></textarea></div>
+        <button type="submit" class="btn block">追加する</button>
+      </form>
+    </div>
+    <div class="card">
+      <h2>今後の予定</h2>
+      <div id="eventUpcomingList"></div>
+    </div>
+    <div class="card">
+      <h2>過去の予定</h2>
+      <div id="eventPastList"></div>
+    </div>
+  </section>
+
+  <!-- 旅行 -->
+  <section class="tab-panel" id="tab-trip">
+    <div class="card">
+      <h2>家族旅行を計画</h2>
+      <form class="entry-form" id="tripForm">
+        <div class="field"><label>タイトル</label><input type="text" name="title" required placeholder="例: 夏休み沖縄旅行"></div>
+        <div class="field"><label>行き先</label><input type="text" name="destination" placeholder="任意"></div>
+        <div class="row">
+          <div class="field"><label>開始日</label><input type="date" name="startDate"></div>
+          <div class="field"><label>終了日</label><input type="date" name="endDate"></div>
+        </div>
+        <div class="field"><label>予算(円)</label><input type="number" name="budget" min="0" placeholder="任意"></div>
+        <div class="field"><label>メモ</label><textarea name="memo" placeholder="任意"></textarea></div>
+        <button type="submit" class="btn block">追加する</button>
+      </form>
+    </div>
+    <div class="card">
+      <h2>旅行一覧</h2>
+      <div id="tripList"></div>
+    </div>
+  </section>
+</main>
+
+<nav class="tabbar">
+  <button class="tab-btn active" data-tab="home"><span class="emoji">🏡</span>ホーム</button>
+  <button class="tab-btn" data-tab="expense"><span class="emoji">💰</span>支出</button>
+  <button class="tab-btn" data-tab="chore"><span class="emoji">🧹</span>家事</button>
+  <button class="tab-btn" data-tab="event"><span class="emoji">📅</span>予定</button>
+  <button class="tab-btn" data-tab="trip"><span class="emoji">✈️</span>旅行</button>
+</nav>
+
+<!-- メンバー管理モーダル -->
+<div class="modal-backdrop" id="membersModal">
+  <div class="modal">
+    <h2>家族メンバー設定</h2>
+    <div id="memberList"></div>
+    <form id="memberForm" class="entry-form" style="margin-top:14px;">
+      <div class="field"><label>名前</label><input type="text" name="name" required placeholder="例: たろう"></div>
+      <div class="field">
+        <label>カラー</label>
+        <div class="swatches" id="colorSwatches"></div>
+        <input type="hidden" name="color" id="colorInput">
+      </div>
+      <button type="submit" class="btn block">メンバーを追加</button>
+    </form>
+    <button class="btn secondary block" id="closeMembersBtn" style="margin-top:10px;">閉じる</button>
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var STORAGE_KEY = "familyToolData";
+  var COLORS = ["#4a6cf7", "#e5484d", "#2fa06a", "#f5a623", "#a855f7", "#0ea5e9", "#ec4899", "#64748b"];
+
+  function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
+  function todayStr() { return new Date().toISOString().slice(0, 10); }
+  function yen(n) { return "¥" + Number(n || 0).toLocaleString("ja-JP"); }
+  function fmtDate(d) {
+    if (!d) return "";
+    var dt = new Date(d + "T00:00:00");
+    if (isNaN(dt)) return d;
+    var w = ["日", "月", "火", "水", "木", "金", "土"][dt.getDay()];
+    return (dt.getMonth() + 1) + "/" + dt.getDate() + "(" + w + ")";
+  }
+
+  function loadData() {
+    var raw;
+    try { raw = localStorage.getItem(STORAGE_KEY); } catch (e) { raw = null; }
+    var data = raw ? JSON.parse(raw) : null;
+    if (!data) {
+      data = {
+        members: [
+          { id: uid(), name: "パパ", color: COLORS[0] },
+          { id: uid(), name: "ママ", color: COLORS[1] }
+        ],
+        expenses: [], chores: [], events: [], trips: []
+      };
+    }
+    data.members = data.members || [];
+    data.expenses = data.expenses || [];
+    data.chores = data.chores || [];
+    data.events = data.events || [];
+    data.trips = data.trips || [];
+    return data;
+  }
+
+  var state = loadData();
+
+  function save() {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+    catch (e) { console.error("保存に失敗しました", e); }
+  }
+
+  function memberById(id) {
+    for (var i = 0; i < state.members.length; i++) if (state.members[i].id === id) return state.members[i];
+    return null;
+  }
+
+  function fillMemberSelect(selectEl, includeUnassigned) {
+    selectEl.innerHTML = "";
+    if (includeUnassigned) {
+      var opt0 = document.createElement("option");
+      opt0.value = ""; opt0.textContent = "未指定";
+      selectEl.appendChild(opt0);
+    }
+    state.members.forEach(function (m) {
+      var opt = document.createElement("option");
+      opt.value = m.id; opt.textContent = m.name;
+      selectEl.appendChild(opt);
+    });
+  }
+
+  function memberTag(id) {
+    var m = memberById(id);
+    if (!m) return "";
+    return '<span class="tag" style="background:' + m.color + '">' + escapeHtml(m.name) + "</span>";
+  }
+
+  function escapeHtml(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+
+  // ---------- タブ切り替え ----------
+  document.querySelectorAll(".tab-btn").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      document.querySelectorAll(".tab-btn").forEach(function (b) { b.classList.remove("active"); });
+      document.querySelectorAll(".tab-panel").forEach(function (p) { p.classList.remove("active"); });
+      btn.classList.add("active");
+      document.getElementById("tab-" + btn.dataset.tab).classList.add("active");
+      if (btn.dataset.tab === "home") renderHome();
+    });
+  });
+
+  // ---------- メンバー管理 ----------
+  var membersModal = document.getElementById("membersModal");
+  document.getElementById("openMembersBtn").addEventListener("click", function () {
+    renderMemberList();
+    membersModal.classList.add("open");
+  });
+  document.getElementById("closeMembersBtn").addEventListener("click", function () {
+    membersModal.classList.remove("open");
+    renderAll();
+  });
+
+  var colorSwatches = document.getElementById("colorSwatches");
+  var colorInput = document.getElementById("colorInput");
+  COLORS.forEach(function (c, i) {
+    var sw = document.createElement("div");
+    sw.className = "swatch" + (i === 0 ? " selected" : "");
+    sw.style.background = c;
+    sw.addEventListener("click", function () {
+      document.querySelectorAll(".swatch").forEach(function (s) { s.classList.remove("selected"); });
+      sw.classList.add("selected");
+      colorInput.value = c;
+    });
+    colorSwatches.appendChild(sw);
+  });
+  colorInput.value = COLORS[0];
+
+  function renderMemberList() {
+    var el = document.getElementById("memberList");
+    if (!state.members.length) {
+      el.innerHTML = '<div class="empty">メンバーが登録されていません</div>';
+      return;
+    }
+    el.innerHTML = "";
+    state.members.forEach(function (m) {
+      var row = document.createElement("div");
+      row.className = "member-row";
+      row.innerHTML =
+        '<span class="dot" style="background:' + m.color + '"></span>' +
+        '<span class="name">' + escapeHtml(m.name) + "</span>" +
+        '<button class="icon-btn" data-id="' + m.id + '">✕</button>';
+      row.querySelector("button").addEventListener("click", function () {
+        if (!confirm(m.name + " を削除しますか？関連する記録の担当者表示は「未指定」になります。")) return;
+        state.members = state.members.filter(function (x) { return x.id !== m.id; });
+        save();
+        renderMemberList();
+      });
+      el.appendChild(row);
+    });
+  }
+
+  document.getElementById("memberForm").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var fd = new FormData(e.target);
+    var name = (fd.get("name") || "").trim();
+    if (!name) return;
+    state.members.push({ id: uid(), name: name, color: colorInput.value || COLORS[0] });
+    save();
+    e.target.reset();
+    document.querySelectorAll(".swatch").forEach(function (s, i) { s.classList.toggle("selected", i === 0); });
+    colorInput.value = COLORS[0];
+    renderMemberList();
+  });
+
+  // ---------- 支出 ----------
+  var expenseForm = document.getElementById("expenseForm");
+  expenseForm.querySelector('[name="date"]').value = todayStr();
+
+  expenseForm.addEventListener("submit", function (e) {
+    e.preventDefault();
+    var fd = new FormData(e.target);
+    state.expenses.push({
+      id: uid(),
+      date: fd.get("date"),
+      amount: Number(fd.get("amount")) || 0,
+      category: fd.get("category"),
+      payerId: fd.get("payerId") || "",
+      memo: (fd.get("memo") || "").trim()
+    });
+    save();
+    e.target.reset();
+    expenseForm.querySelector('[name="date"]').value = todayStr();
+    renderExpenses();
+    renderHome();
+  });
+
+  function renderExpenses() {
+    fillMemberSelect(document.getElementById("expensePayerSelect"), true);
+
+    var monthSel = document.getElementById("expenseMonthFilter");
+    var months = Array.from(new Set(state.expenses.map(function (x) { return x.date ? x.date.slice(0, 7) : ""; })))
+      .filter(Boolean).sort().reverse();
+    var curMonth = todayStr().slice(0, 7);
+    if (months.indexOf(curMonth) === -1) months.unshift(curMonth);
+    var prevVal = monthSel.value || curMonth;
+    monthSel.innerHTML = '<option value="">全期間</option>' +
+      months.map(function (m) { return '<option value="' + m + '">' + m.replace("-", "年") + "月</option>"; }).join("");
+    monthSel.value = months.indexOf(prevVal) !== -1 ? prevVal : curMonth;
+
+    var catSel = document.getElementById("expenseCategoryFilter");
+    var cats = Array.from(new Set(state.expenses.map(function (x) { return x.category; }))).filter(Boolean);
+    var prevCat = catSel.value;
+    catSel.innerHTML = '<option value="">カテゴリ:全て</option>' +
+      cats.map(function (c) { return '<option value="' + c + '">' + c + "</option>"; }).join("");
+    catSel.value = prevCat;
+
+    monthSel.onchange = drawExpenseList;
+    catSel.onchange = drawExpenseList;
+    drawExpenseList();
+  }
+
+  function drawExpenseList() {
+    var monthSel = document.getElementById("expenseMonthFilter").value;
+    var catSel = document.getElementById("expenseCategoryFilter").value;
+    var list = state.expenses.filter(function (x) {
+      if (monthSel && x.date.slice(0, 7) !== monthSel) return false;
+      if (catSel && x.category !== catSel) return false;
+      return true;
+    }).sort(function (a, b) { return b.date.localeCompare(a.date); });
+
+    var total = list.reduce(function (s, x) { return s + x.amount; }, 0);
+    document.getElementById("expenseFilteredTotal").textContent = yen(total);
+    document.getElementById("expenseFilteredCount").textContent = list.length + "件";
+
+    var el = document.getElementById("expenseList");
+    if (!list.length) { el.innerHTML = '<div class="empty">支出の記録がありません</div>'; return; }
+    el.innerHTML = "";
+    list.forEach(function (x) {
+      var row = document.createElement("div");
+      row.className = "list-item";
+      row.innerHTML =
+        '<div class="main"><div class="title">' + escapeHtml(x.category) +
+        (x.memo ? " ・ " + escapeHtml(x.memo) : "") + '</div>' +
+        '<div class="sub">' + fmtDate(x.date) + " " + memberTag(x.payerId) + '</div></div>' +
+        '<div class="amount">' + yen(x.amount) + '</div>' +
+        '<button class="icon-btn" data-id="' + x.id + '">✕</button>';
+      row.querySelector("button").addEventListener("click", function () {
+        state.expenses = state.expenses.filter(function (e) { return e.id !== x.id; });
+        save(); renderExpenses(); renderHome();
+      });
+      el.appendChild(row);
+    });
+  }
+
+  // ---------- 家事 ----------
+  var choreForm = document.getElementById("choreForm");
+  choreForm.addEventListener("submit", function (e) {
+    e.preventDefault();
+    var fd = new FormData(e.target);
+    state.chores.push({
+      id: uid(),
+      title: (fd.get("title") || "").trim(),
+      assigneeId: fd.get("assigneeId") || "",
+      frequency: fd.get("frequency"),
+      dueDate: fd.get("dueDate") || "",
+      done: false
+    });
+    save();
+    e.target.reset();
+    renderChores();
+    renderHome();
+  });
+
+  function nextDueDate(dateStr, frequency) {
+    var dt = dateStr ? new Date(dateStr + "T00:00:00") : new Date();
+    if (isNaN(dt)) dt = new Date();
+    if (frequency === "daily") dt.setDate(dt.getDate() + 1);
+    else if (frequency === "weekly") dt.setDate(dt.getDate() + 7);
+    else if (frequency === "monthly") dt.setMonth(dt.getMonth() + 1);
+    else return null;
+    return dt.toISOString().slice(0, 10);
+  }
+
+  function renderChores() {
+    fillMemberSelect(document.getElementById("choreAssigneeSelect"), true);
+
+    var filterSel = document.getElementById("choreAssigneeFilter");
+    var prevVal = filterSel.value;
+    filterSel.innerHTML = '<option value="">担当者:全て</option>' +
+      state.members.map(function (m) { return '<option value="' + m.id + '">' + escapeHtml(m.name) + "</option>"; }).join("");
+    filterSel.value = prevVal;
+    filterSel.onchange = drawChoreList;
+    document.getElementById("choreStatusFilter").onchange = drawChoreList;
+    drawChoreList();
+  }
+
+  var FREQ_LABEL = { once: "一回限り", daily: "毎日", weekly: "毎週", monthly: "毎月" };
+
+  function drawChoreList() {
+    var assignee = document.getElementById("choreAssigneeFilter").value;
+    var status = document.getElementById("choreStatusFilter").value;
+    var list = state.chores.filter(function (c) {
+      if (assignee && c.assigneeId !== assignee) return false;
+      if (status === "pending" && c.done) return false;
+      if (status === "done" && !c.done) return false;
+      return true;
+    }).sort(function (a, b) {
+      if (a.done !== b.done) return a.done ? 1 : -1;
+      return (a.dueDate || "9999").localeCompare(b.dueDate || "9999");
+    });
+
+    var el = document.getElementById("choreList");
+    if (!list.length) { el.innerHTML = '<div class="empty">該当する家事タスクがありません</div>'; return; }
+    el.innerHTML = "";
+    list.forEach(function (c) {
+      var row = document.createElement("div");
+      row.className = "list-item";
+      var overdue = !c.done && c.dueDate && c.dueDate < todayStr();
+      row.innerHTML =
+        '<div class="main">' +
+        '<label style="display:flex;align-items:center;gap:8px;cursor:pointer;">' +
+        '<input type="checkbox" ' + (c.done ? "checked" : "") + '>' +
+        '<span class="title" style="' + (c.done ? "text-decoration:line-through;color:var(--text-sub);" : "") + '">' +
+        escapeHtml(c.title) + "</span></label>" +
+        '<div class="sub">' + FREQ_LABEL[c.frequency] +
+        (c.dueDate ? " ・ 期限 " + fmtDate(c.dueDate) + (overdue ? '<span style="color:var(--danger)">(期限超過)</span>' : "") : "") +
+        " " + memberTag(c.assigneeId) + '</div></div>' +
+        '<button class="icon-btn" data-id="' + c.id + '">✕</button>';
+
+      row.querySelector('input[type="checkbox"]').addEventListener("change", function (ev) {
+        c.done = ev.target.checked;
+        if (c.done && c.frequency !== "once") {
+          var nd = nextDueDate(c.dueDate, c.frequency);
+          state.chores.push({
+            id: uid(), title: c.title, assigneeId: c.assigneeId,
+            frequency: c.frequency, dueDate: nd, done: false
+          });
+        }
+        save(); renderChores(); renderHome();
+      });
+      row.querySelector(".icon-btn").addEventListener("click", function () {
+        state.chores = state.chores.filter(function (x) { return x.id !== c.id; });
+        save(); renderChores(); renderHome();
+      });
+      el.appendChild(row);
+    });
+  }
+
+  // ---------- 予定 ----------
+  var eventForm = document.getElementById("eventForm");
+  eventForm.querySelector('[name="date"]').value = todayStr();
+
+  eventForm.addEventListener("submit", function (e) {
+    e.preventDefault();
+    var fd = new FormData(e.target);
+    state.events.push({
+      id: uid(),
+      memberId: fd.get("memberId") || "",
+      title: (fd.get("title") || "").trim(),
+      date: fd.get("date"),
+      time: fd.get("time") || "",
+      place: (fd.get("place") || "").trim(),
+      memo: (fd.get("memo") || "").trim()
+    });
+    save();
+    e.target.reset();
+    eventForm.querySelector('[name="date"]').value = todayStr();
+    renderEvents();
+    renderHome();
+  });
+
+  function renderEvents() {
+    fillMemberSelect(document.getElementById("eventMemberSelect"), true);
+    var today = todayStr();
+    var upcoming = state.events.filter(function (x) { return x.date >= today; })
+      .sort(function (a, b) { return a.date.localeCompare(b.date) || (a.time || "").localeCompare(b.time || ""); });
+    var past = state.events.filter(function (x) { return x.date < today; })
+      .sort(function (a, b) { return b.date.localeCompare(a.date); });
+
+    drawEventList(document.getElementById("eventUpcomingList"), upcoming, "今後の予定はありません");
+    drawEventList(document.getElementById("eventPastList"), past, "過去の予定はありません");
+  }
+
+  function drawEventList(el, list, emptyMsg) {
+    if (!list.length) { el.innerHTML = '<div class="empty">' + emptyMsg + "</div>"; return; }
+    el.innerHTML = "";
+    list.forEach(function (x) {
+      var row = document.createElement("div");
+      row.className = "list-item";
+      row.innerHTML =
+        '<div class="main"><div class="title">' + escapeHtml(x.title) + '</div>' +
+        '<div class="sub">' + fmtDate(x.date) + (x.time ? " " + x.time : "") +
+        (x.place ? " ・ " + escapeHtml(x.place) : "") + " " + memberTag(x.memberId) +
+        (x.memo ? '<br>' + escapeHtml(x.memo) : "") + '</div></div>' +
+        '<button class="icon-btn" data-id="' + x.id + '">✕</button>';
+      row.querySelector("button").addEventListener("click", function () {
+        state.events = state.events.filter(function (e) { return e.id !== x.id; });
+        save(); renderEvents(); renderHome();
+      });
+      el.appendChild(row);
+    });
+  }
+
+  // ---------- 旅行 ----------
+  var tripForm = document.getElementById("tripForm");
+  tripForm.addEventListener("submit", function (e) {
+    e.preventDefault();
+    var fd = new FormData(e.target);
+    state.trips.push({
+      id: uid(),
+      title: (fd.get("title") || "").trim(),
+      destination: (fd.get("destination") || "").trim(),
+      startDate: fd.get("startDate") || "",
+      endDate: fd.get("endDate") || "",
+      budget: fd.get("budget") ? Number(fd.get("budget")) : null,
+      memo: (fd.get("memo") || "").trim(),
+      checklist: []
+    });
+    save();
+    e.target.reset();
+    renderTrips();
+    renderHome();
+  });
+
+  function renderTrips() {
+    var list = state.trips.slice().sort(function (a, b) {
+      return (a.startDate || "9999").localeCompare(b.startDate || "9999");
+    });
+    var el = document.getElementById("tripList");
+    if (!list.length) { el.innerHTML = '<div class="empty">旅行の予定はまだありません</div>'; return; }
+    el.innerHTML = "";
+    list.forEach(function (t) {
+      var card = document.createElement("div");
+      card.className = "trip-card";
+      var doneCount = t.checklist.filter(function (c) { return c.done; }).length;
+      card.innerHTML =
+        '<div class="head">' +
+        '<div><div class="title">' + escapeHtml(t.title) + '</div>' +
+        '<div class="dates">' +
+        (t.destination ? escapeHtml(t.destination) + " ・ " : "") +
+        (t.startDate ? fmtDate(t.startDate) : "") + (t.endDate ? " 〜 " + fmtDate(t.endDate) : "") +
+        (t.budget != null ? " ・ 予算 " + yen(t.budget) : "") +
+        '</div></div>' +
+        '<button class="icon-btn" data-role="del">✕</button>' +
+        '</div>' +
+        '<div class="body">' +
+        (t.memo ? '<div class="sub" style="margin-bottom:10px;">' + escapeHtml(t.memo) + '</div>' : "") +
+        '<h3>持ち物・準備チェックリスト (' + doneCount + '/' + t.checklist.length + ')</h3>' +
+        '<div class="checklist" data-role="checklist"></div>' +
+        '<div class="add-inline"><input type="text" placeholder="持ち物を追加" data-role="checklistInput">' +
+        '<button class="btn small" data-role="addChecklist">追加</button></div>' +
+        '</div>';
+
+      card.querySelector('.head').addEventListener("click", function (ev) {
+        if (ev.target.closest('[data-role="del"]')) return;
+        card.classList.toggle("open");
+      });
+      card.querySelector('[data-role="del"]').addEventListener("click", function () {
+        if (!confirm(t.title + " を削除しますか？")) return;
+        state.trips = state.trips.filter(function (x) { return x.id !== t.id; });
+        save(); renderTrips(); renderHome();
+      });
+
+      function drawChecklist() {
+        var wrap = card.querySelector('[data-role="checklist"]');
+        if (!t.checklist.length) { wrap.innerHTML = '<div class="empty">まだ項目がありません</div>'; return; }
+        wrap.innerHTML = "";
+        t.checklist.forEach(function (item) {
+          var row = document.createElement("div");
+          row.className = "checklist-item" + (item.done ? " done" : "");
+          row.innerHTML =
+            '<input type="checkbox" ' + (item.done ? "checked" : "") + '>' +
+            '<span>' + escapeHtml(item.text) + '</span>' +
+            '<button class="icon-btn">✕</button>';
+          row.querySelector('input').addEventListener("change", function (ev) {
+            item.done = ev.target.checked; save(); drawChecklist(); card.querySelector('h3').textContent =
+              "持ち物・準備チェックリスト (" + t.checklist.filter(function (c) { return c.done; }).length + "/" + t.checklist.length + ")";
+          });
+          row.querySelector('button').addEventListener("click", function () {
+            t.checklist = t.checklist.filter(function (c) { return c.id !== item.id; });
+            save(); drawChecklist();
+          });
+          wrap.appendChild(row);
+        });
+      }
+      drawChecklist();
+
+      card.querySelector('[data-role="addChecklist"]').addEventListener("click", function () {
+        var input = card.querySelector('[data-role="checklistInput"]');
+        var text = input.value.trim();
+        if (!text) return;
+        t.checklist.push({ id: uid(), text: text, done: false });
+        input.value = "";
+        save();
+        drawChecklist();
+        card.querySelector('h3').textContent =
+          "持ち物・準備チェックリスト (" + t.checklist.filter(function (c) { return c.done; }).length + "/" + t.checklist.length + ")";
+      });
+
+      el.appendChild(card);
+    });
+  }
+
+  // ---------- ホーム ----------
+  function renderHome() {
+    var curMonth = todayStr().slice(0, 7);
+    var monthTotal = state.expenses
+      .filter(function (x) { return x.date && x.date.slice(0, 7) === curMonth; })
+      .reduce(function (s, x) { return s + x.amount; }, 0);
+    document.getElementById("homeExpenseTotal").textContent = yen(monthTotal);
+
+    var pendingChores = state.chores.filter(function (c) { return !c.done; });
+    document.getElementById("homeChoreCount").textContent = pendingChores.length + "件";
+
+    var today = todayStr();
+    var upcoming = state.events.filter(function (x) { return x.date >= today; })
+      .sort(function (a, b) { return a.date.localeCompare(b.date) || (a.time || "").localeCompare(b.time || ""); })
+      .slice(0, 3);
+    var evEl = document.getElementById("homeUpcomingEvents");
+    if (!upcoming.length) { evEl.innerHTML = '<div class="empty">直近の予定はありません</div>'; }
+    else {
+      evEl.innerHTML = "";
+      upcoming.forEach(function (x) {
+        var row = document.createElement("div");
+        row.className = "list-item";
+        row.innerHTML = '<div class="main"><div class="title">' + escapeHtml(x.title) + '</div>' +
+          '<div class="sub">' + fmtDate(x.date) + (x.time ? " " + x.time : "") + " " + memberTag(x.memberId) + '</div></div>';
+        evEl.appendChild(row);
+      });
+    }
+
+    var trips = state.trips.filter(function (t) { return !t.endDate || t.endDate >= today; })
+      .sort(function (a, b) { return (a.startDate || "9999").localeCompare(b.startDate || "9999"); });
+    var tripEl = document.getElementById("homeNextTrip");
+    if (!trips.length) { tripEl.innerHTML = '<div class="empty">予定されている旅行はありません</div>'; }
+    else {
+      var t = trips[0];
+      tripEl.innerHTML = '<div class="list-item"><div class="main"><div class="title">' + escapeHtml(t.title) + '</div>' +
+        '<div class="sub">' + (t.destination ? escapeHtml(t.destination) + " ・ " : "") +
+        (t.startDate ? fmtDate(t.startDate) : "") + (t.endDate ? " 〜 " + fmtDate(t.endDate) : "") + '</div></div></div>';
+    }
+
+    var pendEl = document.getElementById("homePendingChores");
+    var overdueSorted = pendingChores.slice().sort(function (a, b) { return (a.dueDate || "9999").localeCompare(b.dueDate || "9999"); }).slice(0, 5);
+    if (!overdueSorted.length) { pendEl.innerHTML = '<div class="empty">未完了の家事はありません 🎉</div>'; }
+    else {
+      pendEl.innerHTML = "";
+      overdueSorted.forEach(function (c) {
+        var overdue = c.dueDate && c.dueDate < today;
+        var row = document.createElement("div");
+        row.className = "list-item";
+        row.innerHTML = '<div class="main"><div class="title">' + escapeHtml(c.title) + '</div>' +
+          '<div class="sub">' + (c.dueDate ? "期限 " + fmtDate(c.dueDate) : FREQ_LABEL[c.frequency]) +
+          (overdue ? '<span style="color:var(--danger)"> (期限超過)</span>' : "") + " " + memberTag(c.assigneeId) + '</div></div>';
+        pendEl.appendChild(row);
+      });
+    }
+  }
+
+  function renderAll() {
+    renderExpenses();
+    renderChores();
+    renderEvents();
+    renderTrips();
+    renderHome();
+  }
+
+  renderAll();
+})();
+</script>
+</body>
+</html>
